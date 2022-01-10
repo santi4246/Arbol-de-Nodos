@@ -11,16 +11,22 @@ struct Nodo {
     int dato;
     Nodo* derecho;
     Nodo* izquierdo;
+    Nodo* padre;
 };
 
 /*Funciones de Nodo*/
-Nodo* crearNodo(int);
-void insertarNodo(Nodo*&, int);
+Nodo* crearNodo(int, Nodo*);
+void insertarNodo(Nodo*&, int, Nodo*);
 void mostrarArbol(Nodo*, int);
 bool busquedaNodo(Nodo*, int);
 void busquedaPreOrden(Nodo*);
 void busquedaInOrden(Nodo*);
 void busquedaPostOrden(Nodo*);
+void eliminar(Nodo*, int);
+void eliminarNodo(Nodo*);
+Nodo* minimo(Nodo*);
+void reemplazar(Nodo*, Nodo*);
+void destruirNodo(Nodo*);
 
 Nodo* arbol = NULL;
 void menu();
@@ -43,7 +49,8 @@ void menu() {
         cout << "4. Recorrer el Arbol en busqueda de profundidad Pre Orden: " << endl;
         cout << "5. Recorrer el Arbol en busqueda de profundidad In Orden: " << endl;
         cout << "6. Recorrer el Arbol en busqueda de profundidad Post Orden: " << endl;
-        cout << "7. Salir. " << endl;
+        cout << "7. Eliminar Nodos del Arbol: " << endl;
+        cout << "8. Salir. " << endl;
         cout << "\nDigite una opcion: ";
         cin >> opc;
 
@@ -51,7 +58,7 @@ void menu() {
         case 1:
             cout << "\nDigite un numero: ";
             cin >> dato;
-            insertarNodo(arbol, dato);
+            insertarNodo(arbol, dato, NULL);
             cout << "\n";
             system("pause");
             break;
@@ -91,35 +98,43 @@ void menu() {
             cout << "\n";
             system("pause");
             break;
+        case 7:
+            cout << "\nDigite el Nodo a eliminar: " << endl;
+            cin >> dato;
+            eliminar(arbol, dato);
+            cout << "\n";
+            system("pause");
+            break;
         default:
             break;
         }
         system("cls");
-    } while (opc != 7);
+    } while (opc != 8);
 }
 
 /*Creación de Nodos*/
-Nodo* crearNodo(int n) {
+Nodo* crearNodo(int n, Nodo* padre) {
     Nodo* nuevoNodo = new Nodo();
     nuevoNodo->dato = n;
     nuevoNodo->derecho = NULL;
     nuevoNodo->izquierdo = NULL;
+    nuevoNodo->padre = padre;
     return nuevoNodo;
 }
 
 /*Inserción de Nodos*/
-void insertarNodo(Nodo*& arbol, int n) {
-    if (arbol == NULL) {//Si el árbol está vacío.
-        Nodo* nuevoNodo = crearNodo(n);
+void insertarNodo(Nodo*& arbol, int n, Nodo* padre) {
+    if (arbol == NULL) {
+        Nodo* nuevoNodo = crearNodo(n, padre);
         arbol = nuevoNodo;
     }
-    else {//Si el árbol tiene un nodo o más de un nodo.
-        int valor_raiz = arbol->dato;
-        if (n < valor_raiz) {
-            insertarNodo(arbol->izquierdo, n);//Si el elemento es menor a la raíz.
+    else {
+        int valorRaiz = arbol->dato;
+        if (n < valorRaiz){
+            insertarNodo(arbol->izquierdo, n, arbol);
         }
         else {
-            insertarNodo(arbol->derecho, n);//Si el elemento es mayor a la raíz.
+            insertarNodo(arbol->derecho, n, arbol);
         }
     }
 }
@@ -190,3 +205,87 @@ void busquedaPostOrden(Nodo* arbol) {
         cout << arbol->dato << " - ";
     }
 }
+
+/*Función recursiva Eliminar que verifica el Árbol*/
+void eliminar(Nodo* arbol, int n){
+    if (arbol == NULL) {
+        return;
+    }
+    else if (n < arbol->dato) {
+        eliminar(arbol->izquierdo, n);
+    }
+    else if (n > arbol->dato) {
+        eliminar(arbol->derecho, n);
+    }
+    else {
+        eliminarNodo(arbol);
+    }
+}
+
+/*Función recursiva que busca el Nodo más izquierdo posible*/
+Nodo* minimo(Nodo* arbol){
+    if (arbol == NULL) {
+        return NULL;
+    }
+    if (arbol->izquierdo) {
+        return minimo(arbol->izquierdo);
+    }
+    else {
+        return arbol;
+    }
+}
+
+/*Función para eliminar el Nodo encontrado*/
+void eliminarNodo(Nodo* nodoEliminar) {
+    if (nodoEliminar->izquierdo && nodoEliminar->derecho) {
+        Nodo* menor = minimo(nodoEliminar->derecho);
+        nodoEliminar->dato = menor->dato;
+        eliminarNodo(menor);
+    }
+    else if (nodoEliminar->izquierdo) {
+        reemplazar(nodoEliminar, nodoEliminar->izquierdo);
+        destruirNodo(nodoEliminar);
+    }
+    else if (nodoEliminar->derecho) {
+        reemplazar(nodoEliminar, nodoEliminar->derecho);
+        destruirNodo(nodoEliminar);
+    }
+    else {
+        reemplazar(nodoEliminar, NULL);
+        destruirNodo(nodoEliminar);
+    }
+}
+
+/*Función para reemplazar Nodo Padre por Nodo Hijo*/
+void reemplazar (Nodo* arbol, Nodo* nuevoNodo) {
+    if (arbol->padre) {
+        if (arbol->dato == arbol->padre->izquierdo->dato) {
+            arbol->padre->izquierdo = nuevoNodo;
+        }
+        else if (arbol->dato == arbol->padre->derecho->dato) {
+            arbol->padre->derecho = nuevoNodo;
+        }
+    }
+    else if (nuevoNodo) {
+        nuevoNodo->padre = arbol->padre;
+    }
+}
+
+/*Función para destruir Nodos ya localizados*/
+void destruirNodo(Nodo* nodo){
+    nodo->izquierdo = NULL;
+    nodo->derecho = NULL;
+    delete nodo;
+}
+
+/*
+* Spanish:
+Al intentar eliminar el Nodo Padre el programa se cierra inesperadamente. 
+Restaría captar el intento de eliminaación del Nodo Padre para que el 
+programa continúe ejecutándose exitosamente.
+
+English:
+When trying to remove the Parent Node the program closes unexpectedly.
+It would remain to capture the attempt to eliminate the Parent Node so 
+that the program continue to run successfully.
+*/
